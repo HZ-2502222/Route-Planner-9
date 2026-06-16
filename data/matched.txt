@@ -1,0 +1,43 @@
+Matched Shuttles and Passengers
+================================
+
+Shuttle ID: s01 | Destination: Mall | Time: 10:00
+Passengers:
+  - p01
+
+Shuttle ID: s02 | Destination: Cinema | Time: 14:30
+Passengers:
+  - p02
+
+Shuttle ID: s03 | Destination: Sports centre | Time: 09:00
+Passengers:
+  - p03
+
+Shuttle ID: s04 | Destination: Post office | Time: 11:15
+Passengers:
+  - p04
+
+Shuttle ID: s05 | Destination: Supermarket | Time: 16:45
+Passengers:
+  - p05
+
+Shuttle ID: s06 | Destination: Mall | Time: 12:00
+Passengers:
+  - p06
+
+Shuttle ID: s07 | Destination: Cinema | Time: 18:00
+Passengers:
+  - p07
+
+Shuttle ID: s08 | Destination: Sports centre | Time: 14:00
+Passengers:
+  - p08
+
+Shuttle ID: s09 | Destination: Post office | Time: 08:30
+Passengers:
+  - p09
+
+Shuttle ID: s10 | Destination: Supermarket | Time: 10:30
+Passengers:
+  - p10
+

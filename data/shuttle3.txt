@@ -1,0 +1,2 @@
+s05,Mall,15:45
+s06,Supermarket,11:23

@@ -1,0 +1,20 @@
+p01,Mall,10:00
+p02,Cinema,14:30
+p03,Sports centre,09:00
+p04,Post office,11:15
+p05,Supermarket,16:45
+p06,Mall,12:00
+p07,Cinema,18:00
+p08,Sports centre,14:00
+p09,Post office,08:30
+p10,Supermarket,10:30
+p11,Mall,10:00
+p12,Cinema,14:30
+p13,Sports centre,09:00
+p14,Post office,11:15
+p15,Supermarket,16:45
+p16,Mall,11:00
+p17,Cinema,15:00
+p18,Sports centre,10:00
+p19,Post office,12:00
+p20,Supermarket,17:00

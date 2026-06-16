@@ -1,0 +1,2 @@
+s03,Supermarket,09:15
+s04,PostOffice,11:23
