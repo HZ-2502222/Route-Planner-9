@@ -15,7 +15,7 @@ export default function Dashboard({ data, setData, onReset }) {
   //Table view options
   const [entityView, setEntityView] = useState('shuttles');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
 
   //Search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -316,12 +316,12 @@ export default function Dashboard({ data, setData, onReset }) {
 
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-muted)' }}>Sort By</label>
-              <select 
-                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '5px', marginBottom: '10px' }}
+              <select
+                style={{width: '100%', padding: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '5px', marginBottom: '10px' }}
                 value={sortConfig.key || ''}
                 onChange={e => setSortConfig({ ...sortConfig, key: e.target.value })}
               >
-                <option value="" disabled>Select Column</option>
+                {/* <option value="" disabled>Select Column</option> */}
                 <option value="id">ID</option>
                 <option value="destination">Destination</option>
                 <option value="time">Time</option>
