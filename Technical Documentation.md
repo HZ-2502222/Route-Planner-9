@@ -8,7 +8,7 @@ The Route Planner is a full-stack application designed to match driverless shutt
 
 ### Backend (C++)
 - Create objects of different classes in the same application
-- Allow objects to communicate with each othera
+- Allow objects to communicate with each other
 - Create more complex classes from existing ones
 - Extend definition of existing classes
 - Override methods (inheritance, polymorphism)
@@ -32,7 +32,7 @@ The Route Planner is a full-stack application designed to match driverless shutt
 
 ## Object-Oriented Programming (OOP) Principles 
 
-**demonstrating 4 poillars of oop**
+**Demonstrating 4 pillars of oop**
 
 ### 1. **Encapsulation**
 
@@ -149,7 +149,7 @@ Abstraction hides complex implementation details and exposes only the necessary 
   ```cpp
   json UI::serializeState();
   ```
-  The frontend donnid to know about C++ objects, it receives clean JSON data.
+  The frontend does not need to know about C++ objects, it receives clean JSON data.
 
 ### Summary of OOP Concepts
 
@@ -409,7 +409,7 @@ Abstraction hides complex implementation details and exposes only the necessary 
 
 ---
 
-## Backend, API, Frontend communications (in dept explanation ok)
+## Backend, API, Frontend communications (in depth explanation ok)
 
 The frontend sends and receives information from the backend using web requests. The backend responds with JSON data that the frontend uses to update the screen.
 
@@ -498,7 +498,7 @@ await fetch(endpoint, {
 
 ---
 
-## Action journeys (even more indept ya?)
+## Action journeys (even more indepth ya?)
 These journeys show what happens step-by-step when the user clicks buttons or submits forms.
 
 ### Upload data journey
@@ -643,7 +643,7 @@ This is how the frontend knows which shuttles have passengers and which passenge
 
 ---
 
-## problenm and challenges
+## problem and challenges
 
 **NONE**
 
