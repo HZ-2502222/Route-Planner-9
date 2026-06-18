@@ -15,7 +15,7 @@ export default function Dashboard({ data, setData, onReset }) {
   //Table view options
   const [entityView, setEntityView] = useState('shuttles');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
 
   //Search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,7 +202,7 @@ export default function Dashboard({ data, setData, onReset }) {
     return list;
   };
 
-  // --- 2. SLIDING WINDOW LOGIC CALCULATED SECOND ---
+  //sliding window logic for tableview pagination
   const rowsPerPage = 5; 
   let currentTableData = [];
   let totalItems = 0;
