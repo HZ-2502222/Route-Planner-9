@@ -465,7 +465,7 @@ export default function Dashboard({ data, setData, onReset }) {
             <button className="btn" style={{ background: adminMode === 'add' ? '#10b981' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('add')}>Add</button>
             <button className="btn" style={{ background: adminMode === 'edit' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('edit')}>Edit</button>
             <button className="btn" style={{ background: adminMode === 'delete' ? '#ef4444' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('delete')}>Delete</button>
-            <button className="btn" onClick={onReset} style={{ background: '#ff0000', color: '#fff' }}>Start Over</button>
+            <button className="btn" onClick={handleStartOver} style={{ background: '#ff0000', color: '#fff' }}>Start Over</button>
           </div>
         </div>
 
