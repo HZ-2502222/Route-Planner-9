@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Modal from './Modal';
 
 //Main dashboard component 
 export default function Dashboard({ data, setData, onReset }) {
@@ -29,14 +30,20 @@ export default function Dashboard({ data, setData, onReset }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, isAlert: true, message : '', onConfirm: null });
+
+  const showAlert = (msg) => {
+    setModalConfig({ isOpen: true, isAlert: true, message: msg, onConfirm: null });
+  }
+
   //Define clickable hotspots on the map
   const mapHotspots = [
-    { name: 'Central Station', left: 33, top: 47, width: 25, height: 22 },
-    { name: 'Sport Centre',    left: 1,  top: 30, width: 16, height: 18 },
-    { name: 'Mall',            left: 20, top: 30, width: 16, height: 18 },
-    { name: 'Cinema',          left: 57, top: 30, width: 13, height: 17 },
-    { name: 'Supermarket',     left: 57, top: 54, width: 14, height: 15 },
-    { name: 'Post Office',     left: 70, top: 74, width: 15, height: 16 },
+    { name: 'Central Station', left: 54, top: 50, width: 13, height: 20 },
+    { name: 'Sport Centre',    left: 2,  top: 32, width: 14, height: 18 },
+    { name: 'Mall',            left: 22, top: 30, width: 14, height: 18 },
+    { name: 'Cinema',          left: 62, top: 30, width: 16, height: 17 },
+    { name: 'Supermarket',     left: 68, top: 56, width: 9, height: 15 },
+    { name: 'Post Office',     left: 66, top: 82, width: 11, height: 16 },
   ];
 
   //Get shuttles that are assigned to a specific destination
@@ -71,28 +78,107 @@ export default function Dashboard({ data, setData, onReset }) {
 
   //Run matching algorithm to assign shuttles to passengers
   const handleAssignRoutes = async () => {
+    setModalConfig({
+      isOpen: true,
+      isAlert: true,
+      message: 'Routes Assigned! Click OK to continue.',
+      onConfirm: async () => {
+
     const res = await fetch('http://localhost:8080/assign', { method: 'POST' });
     const newState = await res.json();
     setData(newState);
+      }
+    });
   };
 
-  //Export matched data to file
+  //Handle start over action with confirmation
+  const handleStartOver = () => {
+    setModalConfig({
+      isOpen: true,
+      isAlert: false,
+      message: 'Are you sure you want to start over? This will clear all data.',
+      onConfirm: () => {
+        onReset();
+      }
+  
+    });
+  };
+
+  //Export matched data to file with confirmation
   const handleExport = async () => {
+    setModalConfig({
+      isOpen: true,
+      isAlert: true,
+      message: 'Exporting matched list to data/matched.txt. Click OK to continue.',
+      onConfirm: async () => {  
     try {
       const res = await fetch('http://localhost:8080/export', { method: 'POST' });
       if (res.ok) {
-        alert('Successfully exported matched list to data/matched.txt');
-      } else {
-        alert('Failed to export data.');
+        setModalConfig({
+          isOpen: true,
+          isAlert: true,
+          message: 'Export successful! Check data/matched.txt.',
+      }) 
+    } else {
+        setModalConfig({
+          isOpen: true,
+          isAlert: true,
+          message: 'Failed to export data.'
+        });
       }
     } catch (err) {
-      alert('Error connecting to server.');
+      setModalConfig({
+        isOpen: true,
+        isAlert: true,
+        message: 'Error connecting to server.'
+      });
     }
-  };
+  }  
+});
+};
 
   //Handle add/edit/delete form submission
   const handleAdminSubmit = async (e) => {
     e.preventDefault();
+
+    //request from backend
+    const executeAdminAction = async () => {
+      const endpoint = `http://localhost:8080/${adminMode}`;
+      const payload = { type: adminEntityType, ...formData };
+      
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          const newState = await res.json();
+          setData(newState);
+          setFormData({ id: '', destination: '', time: '' });
+          if (adminEntityType === 'shuttle') {
+          setModalConfig({
+            isOpen: true,
+            isAlert: true,
+            message: `Shuttle ${adminMode === 'add' ? 'added' : adminMode === 'edit' ? 'updated' : 'deleted'} successfully! Please assign routes again.`
+          });
+        } else if (adminEntityType === 'passenger') {
+          setModalConfig({
+            isOpen: true,
+            isAlert: true,
+            message: `Passenger ${adminMode === 'add' ? 'added' : adminMode === 'edit' ? 'updated' : 'deleted'} successfully! Please assign routes again.`
+          });
+        }
+        } else if (res.status === 409) {
+          setModalConfig({ isOpen: true, isAlert: true, message: 'Error: ID already exists!' });
+        } else {
+          setModalConfig({ isOpen: true, isAlert: true, message: 'Action failed. Check ID.' });
+        }
+      } catch (err) {
+        setModalConfig({ isOpen: true, isAlert: true, message: 'Error connecting to server.' });
+      }
+    };
 
     //Check if entity is currently assigned before deletion
     if (adminMode === 'delete') {
@@ -110,48 +196,27 @@ export default function Dashboard({ data, setData, onReset }) {
           }
         }
       }
-      
+
       //Show confirmation dialog
       let msg = "Are you sure you want to delete this?";
       if (isAssigned) {
-        if (adminEntityType === 'shuttle') {
-          msg = "Warning: This shuttle has assigned passengers. Are you sure you want to delete?";
-        } else {
-          msg = "Warning: This passenger is currently assigned to a shuttle. Are you sure you want to delete?";
-        }
+        msg = adminEntityType === 'shuttle' 
+          ? "Warning: This shuttle has assigned passengers. Are you sure you want to delete?" 
+          : "Warning: This passenger is currently assigned to a shuttle. Are you sure you want to delete?";
       }
-      
-      if (!window.confirm(msg)) {
-        return;
-      }
-    }
 
-    //Send request to backend
-    const endpoint = `http://localhost:8080/${adminMode}`;
-    const payload = { type: adminEntityType, ...formData };
-    
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      setModalConfig({
+        isOpen: true,
+        isAlert: false, 
+        message: msg,
+        onConfirm: executeAdminAction
       });
-      if (res.ok) {
-        //Update UI with new state
-        const newState = await res.json();
-        setData(newState);
-        setFormData({ id: '', destination: '', time: '' });
-        alert(`Successfully processed ${adminMode} for ${adminEntityType}`);
-      } else if (res.status === 409) {
-        alert('Error: ID already exists!');
-      } else {
-        alert('Action failed. Check ID.');
-      }
-    } catch (err) {
-      alert('Error connecting to server.');
+      
+    } else {
+      executeAdminAction();
     }
   };
-
+    
   //Sort table by column
   const handleSort = (key) => {
     //Toggle sort direction if same column clicked
@@ -257,6 +322,7 @@ export default function Dashboard({ data, setData, onReset }) {
              item.time.toLowerCase().includes(q);
     });
   };
+
 
   return (
     <div className="dashboard-container animate-fade-in">
@@ -399,7 +465,7 @@ export default function Dashboard({ data, setData, onReset }) {
             <button className="btn" style={{ background: adminMode === 'add' ? '#10b981' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('add')}>Add</button>
             <button className="btn" style={{ background: adminMode === 'edit' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('edit')}>Edit</button>
             <button className="btn" style={{ background: adminMode === 'delete' ? '#ef4444' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('delete')}>Delete</button>
-            <button className="btn" onClick={onReset} style={{ background: '#ff0000', color: '#fff' }}>Start Over</button>
+            <button className="btn" onClick={handleStartOver} style={{ background: '#ff0000', color: '#fff' }}>Start Over</button>
           </div>
         </div>
 
@@ -632,6 +698,14 @@ export default function Dashboard({ data, setData, onReset }) {
           </div>
         )}
       </div>
+
+      <Modal 
+        isOpen={modalConfig.isOpen}
+        isAlert={modalConfig.isAlert}
+        message={modalConfig.message}
+        onConfirm={modalConfig.onConfirm}
+        onClose={() => setModalConfig({ isOpen: false, isAlert: true, message: '', onConfirm: null })}
+      />
     </div>
   );
 }
