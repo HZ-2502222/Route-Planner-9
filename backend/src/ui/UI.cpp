@@ -1,6 +1,7 @@
 #include "../../include/ui/UI.h"
 #include <iostream>
 #include <fstream>
+#include <cctype>
 
 using json = nlohmann::json;
 
@@ -130,6 +131,20 @@ int UI::main() {
             json j = json::parse(req.body);
             std::string type = j["type"];
             std::string id = j["id"];
+
+            auto hasValidPrefix = [](const std::string& entityType, const std::string& entityId) {
+                if (entityId.empty()) return false;
+                const char prefix = static_cast<char>(std::tolower(static_cast<unsigned char>(entityId.front())));
+                if (entityType == "shuttle") return prefix == 's';
+                if (entityType == "passenger") return prefix == 'p';
+                return false;
+            };
+
+            if (!hasValidPrefix(type, id)) {
+                res.status = 400;
+                res.set_content("{\"error\":\"Shuttle IDs must start with s and passenger IDs must start with p\"}", "application/json");
+                return;
+            }
             
             bool duplicate = false;
             for (const auto& s : this->mainShuttleList.getRawList()) {

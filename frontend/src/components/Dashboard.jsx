@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from './Modal';
 
 //Main dashboard component 
@@ -24,17 +24,27 @@ export default function Dashboard({ data, setData, onReset }) {
 
   //sliding window
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState('1');
   const [showAllSidebar, setShowAllSidebar] = useState(false);
 
   //Map tooltip display
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [adminFormError, setAdminFormError] = useState('');
 
   const [modalConfig, setModalConfig] = useState({ isOpen: false, isAlert: true, message : '', onConfirm: null });
 
   const showAlert = (msg) => {
     setModalConfig({ isOpen: true, isAlert: true, message: msg, onConfirm: null });
   }
+
+  const hasValidEntityIdPrefix = (entityType, entityId) => {
+    if (!entityId) return false;
+    const prefix = entityId[0].toLowerCase();
+    if (entityType === 'shuttle') return prefix === 's';
+    if (entityType === 'passenger') return prefix === 'p';
+    return false;
+  };
 
   //Define clickable hotspots on the map
   const mapHotspots = [
@@ -141,6 +151,33 @@ export default function Dashboard({ data, setData, onReset }) {
   const handleAdminSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData.id.trim()) {
+      setAdminFormError('ID is required.');
+      return;
+    }
+
+    if (adminMode !== 'delete') {
+      if (!formData.destination) {
+        setAdminFormError('Please select a destination.');
+        return;
+      }
+      if (!formData.time) {
+        setAdminFormError('Please select a time.');
+        return;
+      }
+    }
+
+    if (adminMode === 'add' && !hasValidEntityIdPrefix(adminEntityType, formData.id)) {
+      setAdminFormError(
+        adminEntityType === 'shuttle'
+          ? 'Shuttle ID must start with s.'
+          : 'Passenger ID must start with p.'
+      );
+      return;
+    }
+
+    setAdminFormError('');
+
     //request from backend
     const executeAdminAction = async () => {
       const endpoint = `http://localhost:8080/${adminMode}`;
@@ -157,6 +194,7 @@ export default function Dashboard({ data, setData, onReset }) {
           const newState = await res.json();
           setData(newState);
           setFormData({ id: '', destination: '', time: '' });
+          setAdminFormError('');
           if (adminEntityType === 'shuttle') {
           setModalConfig({
             isOpen: true,
@@ -173,7 +211,16 @@ export default function Dashboard({ data, setData, onReset }) {
         } else if (res.status === 409) {
           setModalConfig({ isOpen: true, isAlert: true, message: 'Error: ID already exists!' });
         } else {
-          setModalConfig({ isOpen: true, isAlert: true, message: 'Action failed. Check ID.' });
+          let errorMessage = 'Action failed. Check ID.';
+          try {
+            const errorData = await res.json();
+            if (errorData?.error) {
+              errorMessage = `Error: ${errorData.error}`;
+            }
+          } catch {
+            //Keep the default message when the response is not JSON.
+          }
+          setModalConfig({ isOpen: true, isAlert: true, message: errorMessage });
         }
       } catch (err) {
         setModalConfig({ isOpen: true, isAlert: true, message: 'Error connecting to server.' });
@@ -287,6 +334,26 @@ export default function Dashboard({ data, setData, onReset }) {
   const handlePrev = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
   const handleNext = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
 
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage, totalPages]);
+
+  const commitPageInput = () => {
+    const nextPage = Number(pageInput);
+    if (Number.isInteger(nextPage) && nextPage >= 1 && nextPage <= totalPages) {
+      setCurrentPage(nextPage);
+    } else {
+      if (Number.isInteger(nextPage)) {
+        if (nextPage < 1) {
+          showAlert('Page number cannot be less than 1.');
+        } else if (nextPage > totalPages) {
+          showAlert(`Page number cannot be greater than ${totalPages}.`);
+        }
+      }
+      setPageInput(String(currentPage));
+    }
+  };
+
   //Get search results based on query and filters
   const getSearchData = () => {
     if (!searchQuery) return [];
@@ -336,11 +403,11 @@ export default function Dashboard({ data, setData, onReset }) {
               <button className="btn" style={{ flex: 1, background: adminEntityType === 'passenger' ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminEntityType('passenger')}>Passenger</button>
             </div>
             
-            <form onSubmit={handleAdminSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <input type="text" placeholder="ID (e.g. s01)" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} required style={{ padding: '10px', borderRadius: '5px' }} />
+            <form noValidate onSubmit={handleAdminSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input type="text" placeholder="ID (e.g. s01)" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} style={{ padding: '10px', borderRadius: '5px' }} />
               {adminMode !== 'delete' && (
                 <>
-                  <select value={formData.destination} onChange={e => setFormData({...formData, destination: e.target.value})} required style={{ padding: '10px', borderRadius: '5px' }}>
+                  <select value={formData.destination} onChange={e => setFormData({...formData, destination: e.target.value})} style={{ padding: '10px', borderRadius: '5px' }}>
                     <option value="" disabled>Select Destination</option>
                     <option value="Mall">Mall</option>
                     <option value="Cinema">Cinema</option>
@@ -348,8 +415,13 @@ export default function Dashboard({ data, setData, onReset }) {
                     <option value="Post office">Post office</option>
                     <option value="Supermarket">Supermarket</option>
                   </select>
-                  <input type="time" placeholder="Time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} required style={{ padding: '10px', borderRadius: '5px' }} />
+                  <input type="time" placeholder="Time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} style={{ padding: '10px', borderRadius: '5px' }} />
                 </>
+              )}
+              {adminFormError && (
+                <div style={{ color: '#fca5a5', fontSize: '13px', marginTop: '-6px' }}>
+                  {adminFormError}
+                </div>
               )}
               <button type="submit" className="btn" style={{ background: adminMode === 'delete' ? '#ef4444' : '#10b981' }}>Confirm {adminMode}</button>
             </form>
@@ -632,7 +704,53 @@ export default function Dashboard({ data, setData, onReset }) {
                       border: '1px solid var(--glass-border)' 
                     }}
                   >
-                    Page {currentPage} of {totalPages}
+                    Page{' '}
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--glass-border)' }}>
+                        <input
+                          type="text" inputMode="numeric" pattern="[0-9]*" value={pageInput}onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}onBlur={commitPageInput}onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              commitPageInput();
+                            }
+                          }}
+                          style={{
+                            width: '48px', padding: '6px 8px', border: 'none', outline: 'none', background: 'transparent', color: '#fff', textAlign: 'center', fontWeight: 600,
+                          }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const n = Number(pageInput) || currentPage;
+                              const next = Math.min(totalPages, n + 1);
+                              setPageInput(String(next));
+                              setCurrentPage(next);
+                            }}
+                            className="btn"
+                            style={{ padding: '4px 6px', minWidth: 0, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer'
+                            }}
+                          >
+                            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 7L6 1L11 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const n = Number(pageInput) || currentPage;
+                              const prev = Math.max(1, n - 1);
+                              setPageInput(String(prev));
+                              setCurrentPage(prev);
+                            }}
+                            className="btn"
+                            style={{ padding: '4px 6px', minWidth: 0, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer'
+                            }}
+                          >
+                            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 1L6 7L1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>of {totalPages}</div>
+                    </div>
                   </div>
                 </div>
               </div>
