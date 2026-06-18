@@ -6,7 +6,21 @@ export default function StartPage({ onDataReady }) {
   const [shuttleFiles, setShuttleFiles] = useState([]);
   const [passengerFiles, setPassengerFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState([]);
+
+  //Validate file has .txt extension and contains keyword
+  const isValidFile = (file, keyword) => {
+    const name = file.name.toLowerCase();
+    return name.endsWith('.txt') && name.includes(keyword);
+  };
+
+  //Get the first column value from the first line of a file
+  const getFirstColumnFromFile = async (file) => {
+    const text = await file.text();
+    const firstLine = text.split('\n')[0];
+    const firstColumn = firstLine.split(',')[0].trim();
+    return firstColumn;
+  };
 
   //Handle file input change event
   const handleFileChange = (e, setter) => {
@@ -35,12 +49,53 @@ export default function StartPage({ onDataReady }) {
   const handleSubmit = async () => {
     //Validate file selection
     if (shuttleFiles.length === 0 || passengerFiles.length === 0) {
-      setError('Please select both shuttle and passenger files.');
+      setErrors(['Please select both shuttle and passenger files.']);
+      return;
+    }
+
+    //Collect all validation errors
+    const validationErrors = [];
+
+    //Validate shuttle files by checking if first column starts with 's'
+    for (let file of shuttleFiles) {
+      if (!file.name.toLowerCase().endsWith('.txt')) {
+        validationErrors.push(`Shuttle file "${file.name}" must be a .txt file.`);
+        continue;
+      }
+      try {
+        const firstColumn = await getFirstColumnFromFile(file);
+        if (!firstColumn.toLowerCase().startsWith('s')) {
+          validationErrors.push(`Shuttle file "${file.name}" - first column must start with 's', found: '${firstColumn}'`);
+        }
+      } catch (err) {
+        validationErrors.push(`Error reading shuttle file "${file.name}": ${err.message}`);
+      }
+    }
+
+    //Validate passenger files by checking if first column starts with 'p'
+    for (let file of passengerFiles) {
+      if (!file.name.toLowerCase().endsWith('.txt')) {
+        validationErrors.push(`Passenger file "${file.name}" must be a .txt file.`);
+        continue;
+      }
+      try {
+        const firstColumn = await getFirstColumnFromFile(file);
+        if (!firstColumn.toLowerCase().startsWith('p')) {
+          validationErrors.push(`Passenger file "${file.name}" - first column must start with 'p', found: '${firstColumn}'`);
+        }
+      } catch (err) {
+        validationErrors.push(`Error reading passenger file "${file.name}": ${err.message}`);
+      }
+    }
+
+    //Display all errors if any
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
       return;
     }
     
+    setErrors([]);
     setLoading(true);
-    setError('');
 
     try {
       //Parse both shuttle and passenger CSV files
@@ -60,7 +115,7 @@ export default function StartPage({ onDataReady }) {
       const data = await response.json();
       onDataReady(data);
     } catch (err) {
-      setError(err.message);
+      setErrors([err.message]);
     } finally {
       setLoading(false);
     }
@@ -72,7 +127,13 @@ export default function StartPage({ onDataReady }) {
         <h1 style={{ marginBottom: '10px', textAlign: 'center' }}>Route Planner Dashboard</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '30px' }}>Upload your hard drive data to begin.</p>
         
-        {error && <div style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
+        {errors.length > 0 && (
+          <div style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>
+            {errors.map((err, index) => (
+              <div key={index}>{err}</div>
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
