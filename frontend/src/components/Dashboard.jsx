@@ -264,7 +264,7 @@ export default function Dashboard({ data, setData, onReset }) {
             <button className="btn" style={{ width: '100%', marginTop: '20px', background: 'transparent', border: '1px solid var(--glass-border)' }} onClick={() => setAdminMode(null)}>Cancel</button>
           </div>
         ) : view === 'map' ? (
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div className="sidebar-content" style={{ flex: 1, overflowY: 'auto' }}>
             <h2 style={{ marginBottom: '20px' }}>Assignments</h2>
             
             <h3 style={{ color: '#34d399', marginBottom: '15px' }}>Shuttles ({data.shuttles?.length || 0})</h3>
@@ -283,10 +283,9 @@ export default function Dashboard({ data, setData, onReset }) {
                 <h3 style={{ color: '#fca5a5' }}>{p.id} <span className="badge destination">{p.destination}</span> <span className="badge time">{p.time}</span></h3>
               </div>
             ))}
-            <button className="btn" onClick={onReset} style={{ width: '100%', marginTop: '20px', background: 'transparent', border: '1px solid var(--primary)' }}>Start Over</button>
           </div>
         ) : view === 'table' ? (
-          <div>
+          <div className="sidebar-content">
             <h2 style={{ marginBottom: '20px' }}>Table Options</h2>
             
             <div style={{ marginBottom: '15px' }}>
@@ -334,7 +333,7 @@ export default function Dashboard({ data, setData, onReset }) {
             </div>
           </div>
         ) : (
-          <div>
+          <div className="sidebar-content">
             <h2 style={{ marginBottom: '20px' }}>Search Options</h2>
             <p style={{ color: 'var(--text-muted)' }}>Use the top bar to search for Shuttles and Passengers across the system.</p>
           </div>
@@ -355,6 +354,7 @@ export default function Dashboard({ data, setData, onReset }) {
             <button className="btn" style={{ background: adminMode === 'add' ? '#10b981' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('add')}>Add</button>
             <button className="btn" style={{ background: adminMode === 'edit' ? '#f59e0b' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('edit')}>Edit</button>
             <button className="btn" style={{ background: adminMode === 'delete' ? '#ef4444' : 'rgba(255,255,255,0.1)' }} onClick={() => setAdminMode('delete')}>Delete</button>
+            <button className="btn" onClick={onReset} style={{ background: '#ff0000', color: '#fff' }}>Start Over</button>
           </div>
         </div>
 
