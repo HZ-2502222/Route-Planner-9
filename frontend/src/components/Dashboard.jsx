@@ -15,11 +15,15 @@ export default function Dashboard({ data, setData, onReset }) {
   //Table view options
   const [entityView, setEntityView] = useState('shuttles');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   //Search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
+
+  //sliding window
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAllSidebar, setShowAllSidebar] = useState(false);
 
   //Map tooltip display
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -71,6 +75,7 @@ export default function Dashboard({ data, setData, onReset }) {
     const newState = await res.json();
     setData(newState);
   };
+
   //Export matched data to file
   const handleExport = async () => {
     try {
@@ -155,6 +160,7 @@ export default function Dashboard({ data, setData, onReset }) {
     setSortConfig({ key, direction });
   };
 
+  // --- 1. FULL FUNCTION DEFINED FIRST ---
   //Get filtered and sorted table data
   const getTableData = () => {
     let list = [];
@@ -195,6 +201,26 @@ export default function Dashboard({ data, setData, onReset }) {
     }
     return list;
   };
+
+  // --- 2. SLIDING WINDOW LOGIC CALCULATED SECOND ---
+  const rowsPerPage = 5; 
+  let currentTableData = [];
+  let totalItems = 0;
+  let totalPages = 1;
+  let startIndex = 0;
+  let endIndex = 0;
+
+  if (view === 'table') {
+    const allTableItems = getTableData(); 
+    totalItems = allTableItems.length;
+    totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+    startIndex = (currentPage - 1) * rowsPerPage;
+    endIndex = startIndex + rowsPerPage;
+    currentTableData = allTableItems.slice(startIndex, endIndex);
+  }
+  
+  const handlePrev = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
+  const handleNext = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
 
   //Get search results based on query and filters
   const getSearchData = () => {
@@ -263,29 +289,48 @@ export default function Dashboard({ data, setData, onReset }) {
             </form>
             <button className="btn" style={{ width: '100%', marginTop: '20px', background: 'transparent', border: '1px solid var(--glass-border)' }} onClick={() => setAdminMode(null)}>Cancel</button>
           </div>
-        ) : view === 'map' ? (
-          <div className="sidebar-content" style={{ flex: 1, overflowY: 'auto' }}>
-            <h2 style={{ marginBottom: '20px' }}>Assignments</h2>
+) : view === 'map' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingRight: '5px', overflow: 'hidden' }}>
+            <h2 style={{ marginBottom: '20px', flexShrink: 0 }}>Assignments </h2>
             
-            <h3 style={{ color: '#34d399', marginBottom: '15px' }}>Shuttles ({data.shuttles?.length || 0})</h3>
-            {data.shuttles?.map((s, idx) => (
-              <div key={idx} className="card">
-                <h3>{s.id} <span className="badge destination">{s.destination}</span> <span className="badge time">{s.time}</span></h3>
-                <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                  Passengers: {s.passengers.length > 0 ? s.passengers.map(p => p.id).join(', ') : 'Empty'}
-                </p>
-              </div>
-            ))}
+            <h3 style={{ color: '#34d399', marginBottom: '15px', flexShrink: 0 }}>Shuttles ({data.shuttles?.length || 0})</h3>
+            
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '5px', minHeight: '100px' }}>
+              {/* Sliding Window: Show all, or slice to only show the first 5 */}
+              {(showAllSidebar ? data.shuttles : (data.shuttles || []).slice(0, 5))?.map((s, idx) => (
+                <div key={idx} className="card">
+                  <h3>{s.id} <span className="badge destination">{s.destination}</span> <span className="badge time">{s.time}</span></h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                    Passengers: {s.passengers && s.passengers.length > 0 ? s.passengers.map(p => p.id).join(', ') : 'Empty'}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-            <h3 style={{ color: '#f87171', marginTop: '30px', marginBottom: '15px' }}>Unassigned Passengers ({data.unassigned_passengers?.length || 0})</h3>
-            {data.unassigned_passengers?.map((p, idx) => (
-              <div key={idx} className="card" style={{ borderColor: 'rgba(248, 113, 113, 0.2)' }}>
-                <h3 style={{ color: '#fca5a5' }}>{p.id} <span className="badge destination">{p.destination}</span> <span className="badge time">{p.time}</span></h3>
-              </div>
-            ))}
+            
+            {/* Show All / Show Less Toggle Button */}
+            {((data.shuttles?.length > 5) || (data.unassigned_passengers?.length > 5)) && (
+              <button 
+                className="btn" 
+                onClick={() => setShowAllSidebar(!showAllSidebar)} 
+                style={{ 
+                  width: '100%', 
+                  marginTop: '15px', 
+                  background: 'rgba(196, 31, 31, 0.05)', 
+                  border: '1px solid var(--glass-border)', 
+                  color: 'var(--text-main)',
+                  flexShrink: 0
+                }}
+              >
+                {showAllSidebar ? 'Show Less' : 'Show All Entries'}
+              </button>
+            )}
+
+            
           </div>
+
         ) : view === 'table' ? (
-          <div className="sidebar-content">
+          <div>
             <h2 style={{ marginBottom: '20px' }}>Table Options</h2>
             
             <div style={{ marginBottom: '15px' }}>
@@ -315,12 +360,12 @@ export default function Dashboard({ data, setData, onReset }) {
 
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-muted)' }}>Sort By</label>
-              <select
-                style={{width: '100%', padding: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '5px', marginBottom: '10px' }}
+              <select 
+                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '5px', marginBottom: '10px' }}
                 value={sortConfig.key || ''}
                 onChange={e => setSortConfig({ ...sortConfig, key: e.target.value })}
               >
-                {/* <option value="" disabled>Select Column</option> */}
+                <option value="" disabled>Select Column</option>
                 <option value="id">ID</option>
                 <option value="destination">Destination</option>
                 <option value="time">Time</option>
@@ -333,7 +378,7 @@ export default function Dashboard({ data, setData, onReset }) {
             </div>
           </div>
         ) : (
-          <div className="sidebar-content">
+          <div>
             <h2 style={{ marginBottom: '20px' }}>Search Options</h2>
             <p style={{ color: 'var(--text-muted)' }}>Use the top bar to search for Shuttles and Passengers across the system.</p>
           </div>
@@ -447,7 +492,7 @@ export default function Dashboard({ data, setData, onReset }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {getTableData().map((item, idx) => (
+                  {currentTableData.map((item, idx) => (
                     <tr key={idx} style={{ borderTop: '1px solid var(--glass-border)' }}>
                       <td style={{ padding: '15px' }}>{item.id}</td>
                       <td style={{ padding: '15px' }}><span className="badge destination">{item.destination}</span></td>
@@ -462,7 +507,70 @@ export default function Dashboard({ data, setData, onReset }) {
                   )}
                 </tbody>
               </table>
-            </div>
+            </div> {/* END OF TABLE GLASS PANEL */}
+
+{/* Pagination Controls */}
+            {totalItems > 0 && (
+              <div 
+                className="pagination-panel glass-panel"
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  flexWrap: 'wrap',
+                  gap: '15px',
+                  padding: '12px 20px',
+                  marginTop: '20px',
+                  borderRadius: '10px'
+                }}
+              >
+                <div className="pagination-info" style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                  Showing <strong style={{ color: 'white' }}>{startIndex + 1}</strong> to <strong style={{ color: 'white' }}>{Math.min(endIndex, totalItems)}</strong> of <strong style={{ color: 'white' }}>{totalItems}</strong> entries
+                </div>
+                
+                <div 
+                  className="pagination-actions"
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+                >
+                  <button 
+                    onClick={handlePrev} 
+                    disabled={currentPage === 1}
+                    className="btn pagination-btn"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Prev
+                  </button>
+                  
+                  
+
+                  <button 
+                    onClick={handleNext} 
+                    disabled={currentPage === totalPages}
+                    className="btn pagination-btn"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    Next
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+
+                  <div 
+                    className="pagination-tracker"
+                    style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '500', 
+                      color: 'var(--text-muted)', 
+                      background: 'rgba(0,0,0,0.2)', 
+                      padding: '6px 14px', 
+                      borderRadius: '6px', 
+                      border: '1px solid var(--glass-border)' 
+                    }}
+                  >
+                    Page {currentPage} of {totalPages}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ padding: '30px', flex: 1, overflowY: 'auto' }}>
