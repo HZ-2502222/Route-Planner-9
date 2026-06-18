@@ -88,6 +88,37 @@ body {
   background: rgba(15, 23, 42, 0.8);
 }
 
+/*scrollbar styling*/
+
+/* Firefox: First value is the scrollbar, second is the track behind it */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent; 
+}
+
+/* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 8px;  /* Slightly thicker so it's visible */
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 5px;
+}
+
+/* Make the thumb visible with 30% white (Frosted Glass) */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3); 
+  border-radius: 10px;
+}
+
+/* Light up brighter when hovered */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5); 
+}
+
+
 .main-content {
   flex: 1;
   display: flex;
