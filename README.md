@@ -14,5 +14,21 @@
 3. Start the web dashboard by running: `npm run dev`
 4. Open the `localhost` URL provided in the terminal (usually `http://localhost:5173`) in your web browser.
 
-## Testing
+## Requirements
 
+### Backend Requirements
+- **C++ Compiler**: GCC/MinGW or MSVC (with C++11 or higher)
+- **Libraries**:
+  - `httplib` (included in `include/`)
+  - `nlohmann/json` (included in `include/`)
+  - Standard C++ libraries
+
+### Frontend Requirements
+- **Node.js**: v14.0.0 or higher
+- **npm**: v6.0.0 or higher
+- **Browser**: Modern web browser (Chrome, Firefox, Safari, Edge)
+
+### Data Requirements
+- Shuttle data files (`.txt` format: `ID,DESTINATION,TIME`)
+- Passenger data files (`.txt` format: `ID,DESTINATION,TIME`)
+- Sample data files provided in `data/` folder
